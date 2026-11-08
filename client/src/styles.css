@@ -1,0 +1,530 @@
+/* ==========================================================================
+   Design tokens
+   ========================================================================== */
+:root {
+  --bg: #eef1f6;
+  --surface: #ffffff;
+  --surface-muted: #f6f8fb;
+  --border: #dde3ec;
+  --text: #1b2433;
+  --text-muted: #6b7687;
+  --primary: #2563eb;
+  --primary-hover: #1d4ed8;
+  --primary-soft: #e8efff;
+  --warning: #d97706;
+  --warning-soft: #fff4e0;
+  --danger: #dc2626;
+  --danger-soft: #fdecec;
+  --success: #15803d;
+  --radius: 12px;
+  --radius-sm: 8px;
+  --shadow: 0 1px 2px rgba(16, 24, 40, 0.05), 0 4px 14px rgba(16, 24, 40, 0.05);
+  --sidebar-width: 380px;
+  font-family: Inter, 'Segoe UI', system-ui, -apple-system, sans-serif;
+  color: var(--text);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background: var(--bg);
+  font-size: 14px;
+}
+
+/* ==========================================================================
+   Layout: Map on the left, three stacked panels on the right
+   ========================================================================== */
+.app {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) var(--sidebar-width);
+  gap: 12px;
+  height: 100vh;
+  padding: 12px;
+}
+
+.app__map {
+  min-height: 0;
+}
+
+.app__sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 0;
+}
+
+@media (max-width: 960px) {
+  .app {
+    grid-template-columns: 1fr;
+    height: auto;
+    min-height: 100vh;
+  }
+  .app__map {
+    height: 65vh;
+  }
+  .panel--data {
+    min-height: 320px;
+  }
+}
+
+/* ==========================================================================
+   Panel
+   ========================================================================== */
+.panel {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
+.panel__header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.panel__number {
+  display: inline-grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--primary-soft);
+  color: var(--primary);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.panel__title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 650;
+}
+
+.panel__meta {
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.panel__actions {
+  margin-left: auto;
+}
+
+.panel__body {
+  position: relative;
+  padding: 14px 16px;
+  min-height: 0;
+}
+
+.panel__hint {
+  margin: 10px 0 0;
+  color: var(--text-muted);
+  font-size: 12.5px;
+}
+
+.panel--map {
+  height: 100%;
+}
+
+.panel--map .panel__body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 8px;
+}
+
+.panel--map .map-view {
+  flex: 1;
+}
+
+.panel--data {
+  flex: 1;
+}
+
+.panel--data .panel__body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+}
+
+/* ==========================================================================
+   Buttons
+   ========================================================================== */
+.button-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.btn {
+  min-width: 76px;
+  padding: 8px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.btn:hover:not(:disabled) {
+  background: var(--surface-muted);
+  border-color: #c5cedb;
+}
+
+.btn:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+.btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.btn--primary {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #fff;
+}
+
+.btn--primary:hover:not(:disabled) {
+  background: var(--primary-hover);
+  border-color: var(--primary-hover);
+}
+
+.btn--active {
+  background: var(--warning-soft);
+  border-color: var(--warning);
+  color: #92400e;
+}
+
+.btn--active:hover:not(:disabled) {
+  background: #ffe9c2;
+  border-color: var(--warning);
+}
+
+.btn--danger {
+  color: var(--danger);
+  border-color: #f3c4c4;
+}
+
+.btn--danger:hover:not(:disabled) {
+  background: var(--danger-soft);
+  border-color: var(--danger);
+}
+
+.btn--danger-ghost {
+  border-color: transparent;
+  color: var(--danger);
+}
+
+.btn--danger-ghost:hover:not(:disabled) {
+  background: var(--danger-soft);
+  border-color: transparent;
+}
+
+.btn--small {
+  min-width: 0;
+  padding: 4px 10px;
+  font-size: 12px;
+}
+
+/* ==========================================================================
+   Symbol picker (Marker / Jeep)
+   ========================================================================== */
+.symbol-picker {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.symbol-picker__option {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  font: inherit;
+  font-weight: 600;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.symbol-picker__option:hover {
+  background: var(--surface-muted);
+}
+
+.symbol-picker__option.is-checked {
+  border-color: var(--primary);
+  background: var(--primary-soft);
+  color: var(--primary);
+}
+
+.symbol-preview {
+  display: inline-block;
+  flex: none;
+}
+
+.symbol-preview--marker {
+  width: 13px;
+  height: 21px;
+}
+
+.symbol-preview--jeep {
+  width: 30px;
+  height: 18px;
+}
+
+.symbol-preview--jeep svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* ==========================================================================
+   Map Data table
+   ========================================================================== */
+.data-table__scroll {
+  flex: 1;
+  overflow: auto;
+  min-height: 0;
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.data-table th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  padding: 10px 16px;
+  background: var(--surface-muted);
+  border-bottom: 1px solid var(--border);
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 600;
+  text-align: left;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.data-table td {
+  padding: 9px 16px;
+  border-bottom: 1px solid #edf0f5;
+  vertical-align: middle;
+}
+
+.data-table tbody tr {
+  cursor: pointer;
+}
+
+.data-table tbody tr:hover {
+  background: var(--surface-muted);
+}
+
+.data-table tbody tr.is-selected {
+  background: var(--primary-soft);
+}
+
+.data-table tbody tr:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: -2px;
+}
+
+.data-table__object {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.data-table__name {
+  font-weight: 600;
+}
+
+.data-table__detail {
+  color: var(--text-muted);
+  font-size: 11.5px;
+}
+
+.data-table__num {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.data-table__empty {
+  padding: 28px 16px !important;
+  color: var(--text-muted);
+  text-align: center;
+  cursor: default;
+}
+
+.polygon-swatch {
+  flex: none;
+  width: 18px;
+  height: 14px;
+  border: 2px solid #2563eb;
+  border-radius: 3px;
+  background: rgba(37, 99, 235, 0.2);
+}
+
+/* ==========================================================================
+   Map
+   ========================================================================== */
+.map-view {
+  position: relative;
+  height: 100%;
+  min-height: 300px;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.map-view__map {
+  height: 100%;
+  width: 100%;
+}
+
+.map-view--draw-polygon .leaflet-container,
+.map-view--draw-polygon .leaflet-interactive,
+.map-view--add-object .leaflet-container,
+.map-view--add-object .leaflet-interactive {
+  cursor: crosshair;
+}
+
+.map-view__hint {
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  z-index: 1000;
+  transform: translateX(-50%);
+  max-width: calc(100% - 32px);
+  padding: 8px 16px;
+  border-radius: 999px;
+  background: rgba(27, 36, 51, 0.88);
+  color: #fff;
+  font-size: 13px;
+  text-align: center;
+  pointer-events: none;
+}
+
+/* Object icons on the map */
+.object-icon--marker.is-selected {
+  filter: hue-rotate(150deg) saturate(2.2) drop-shadow(0 0 3px rgba(220, 38, 38, 0.8));
+}
+
+.object-icon.is-draft {
+  opacity: 0.8;
+}
+
+.object-icon--jeep {
+  background: none;
+  border: none;
+}
+
+.jeep-badge {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  padding: 3px 4px;
+  border: 2px solid #fff;
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
+}
+
+.jeep-badge svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.object-icon--jeep.is-draft .jeep-badge {
+  border: 2px dashed var(--warning);
+}
+
+.object-icon--jeep.is-selected .jeep-badge {
+  border: 2px solid var(--danger);
+  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.25), 0 1px 4px rgba(0, 0, 0, 0.35);
+}
+
+/* ==========================================================================
+   Toasts
+   ========================================================================== */
+.toasts {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+  max-width: min(420px, calc(100% - 36px));
+  pointer-events: none;
+}
+
+.toast {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 9px 14px;
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow);
+  font-size: 13px;
+  font-weight: 500;
+  pointer-events: auto;
+}
+
+.toast--info {
+  background: var(--surface);
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+}
+
+.toast--success {
+  background: #ecfdf3;
+  color: var(--success);
+  border: 1px solid #b7ebc9;
+}
+
+.toast--error {
+  background: var(--danger-soft);
+  color: #991b1b;
+  border: 1px solid #f3c4c4;
+}
+
+.toast__close {
+  border: none;
+  background: none;
+  color: inherit;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0;
+}
