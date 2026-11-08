@@ -3,11 +3,12 @@
   "private": true,
   "version": "1.0.0",
   "type": "module",
-  "description": "React + Leaflet client for managing polygons and objects on a map.",
+  "description": "React + TypeScript + Leaflet client for managing polygons and objects on a map.",
   "scripts": {
     "dev": "vite",
     "dev:mock": "vite --mode mock",
-    "build": "vite build",
+    "typecheck": "tsc",
+    "build": "tsc && vite build",
     "preview": "vite preview"
   },
   "dependencies": {
@@ -17,7 +18,12 @@
     "react-leaflet": "^4.2.1"
   },
   "devDependencies": {
+    "@types/leaflet": "^1.9.22",
+    "@types/node": "^22.20.5",
+    "@types/react": "^18.3.31",
+    "@types/react-dom": "^18.3.7",
     "@vitejs/plugin-react": "^4.3.4",
+    "typescript": "~5.6.3",
     "vite": "^5.4.11"
   }
 }

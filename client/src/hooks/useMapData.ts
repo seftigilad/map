@@ -9,15 +9,17 @@ import { useCallback, useEffect, useState } from 'react';
 import { api } from '../api';
 import { objectFromDto, objectToDto, polygonFromDto, polygonToDto } from '../api/mappers';
 import { symbolLabel } from '../map/constants';
+import type { LatLng, MapObject, MapPolygon, SymbolId } from '../types';
 
 const DRAFT_PREFIX = 'draft-';
 let draftSequence = 0;
-const newDraftId = () => `${DRAFT_PREFIX}${++draftSequence}`;
+const newDraftId = (): string => `${DRAFT_PREFIX}${++draftSequence}`;
 
-export const isDraftId = (id) => typeof id === 'string' && id.startsWith(DRAFT_PREFIX);
+/** True for ids of local drafts (not yet saved on the server). */
+export const isDraftId = (id: string): boolean => id.startsWith(DRAFT_PREFIX);
 
 /** Returns "<prefix> N" where N is one more than the highest existing number for that prefix. */
-function nextName(prefix, items) {
+function nextName(prefix: string, items: ReadonlyArray<{ name: string }>): string {
   const pattern = new RegExp(`^${prefix} (\\d+)$`);
   const max = items.reduce((acc, item) => {
     const match = pattern.exec(item.name);
@@ -26,23 +28,45 @@ function nextName(prefix, items) {
   return `${prefix} ${max + 1}`;
 }
 
-const plural = (count, word) => `${count} ${word}${count === 1 ? '' : 's'}`;
+const plural = (count: number, word: string) => `${count} ${word}${count === 1 ? '' : 's'}`;
 
-export function useMapData() {
-  const [polygons, setPolygons] = useState([]);
-  const [draftPolygons, setDraftPolygons] = useState([]);
-  const [objects, setObjects] = useState([]);
-  const [draftObjects, setDraftObjects] = useState([]);
+export interface MapData {
+  polygons: MapPolygon[];
+  draftPolygons: MapPolygon[];
+  objects: MapObject[];
+  draftObjects: MapObject[];
+  busy: boolean;
+  error: string | null;
+  notice: string | null;
+  clearError: () => void;
+  clearNotice: () => void;
+  /** Reloads everything from the server. Resolves to true on success. */
+  reload: () => Promise<boolean>;
+  addDraftPolygon: (latlngs: LatLng[]) => MapPolygon;
+  savePolygons: () => Promise<boolean>;
+  deletePolygon: (id: string) => Promise<boolean>;
+  deleteAllPolygons: () => Promise<boolean>;
+  addDraftObject: (symbol: SymbolId, latlng: LatLng) => MapObject;
+  moveDraftObject: (id: string, latlng: LatLng) => void;
+  saveObjects: () => Promise<boolean>;
+  deleteObject: (id: string) => Promise<boolean>;
+}
+
+export function useMapData(): MapData {
+  const [polygons, setPolygons] = useState<MapPolygon[]>([]);
+  const [draftPolygons, setDraftPolygons] = useState<MapPolygon[]>([]);
+  const [objects, setObjects] = useState<MapObject[]>([]);
+  const [draftObjects, setDraftObjects] = useState<MapObject[]>([]);
 
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState(null);
-  const [notice, setNotice] = useState(null);
+  const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
 
   const clearError = useCallback(() => setError(null), []);
   const clearNotice = useCallback(() => setNotice(null), []);
 
   /** Runs an async server operation with busy/error/notice handling. Resolves to true on success. */
-  const run = useCallback(async (operation, successMessage) => {
+  const run = useCallback(async (operation: () => Promise<void>, successMessage?: string): Promise<boolean> => {
     setBusy(true);
     setError(null);
     try {
@@ -50,7 +74,7 @@ export function useMapData() {
       if (successMessage) setNotice(successMessage);
       return true;
     } catch (err) {
-      setError(err?.message ?? String(err));
+      setError(err instanceof Error ? err.message : String(err));
       return false;
     } finally {
       setBusy(false);
@@ -68,14 +92,14 @@ export function useMapData() {
   );
 
   useEffect(() => {
-    reload();
+    void reload();
   }, [reload]);
 
   // ---------- Polygons ----------
 
   const addDraftPolygon = useCallback(
-    (latlngs) => {
-      const polygon = {
+    (latlngs: LatLng[]): MapPolygon => {
+      const polygon: MapPolygon = {
         id: newDraftId(),
         name: nextName('Polygon', [...polygons, ...draftPolygons]),
         latlngs,
@@ -99,7 +123,7 @@ export function useMapData() {
   }, [draftPolygons, run]);
 
   const deletePolygon = useCallback(
-    async (id) => {
+    async (id: string): Promise<boolean> => {
       if (isDraftId(id)) {
         setDraftPolygons((drafts) => drafts.filter((p) => p.id !== id));
         return true;
@@ -125,8 +149,8 @@ export function useMapData() {
   // ---------- Objects ----------
 
   const addDraftObject = useCallback(
-    (symbol, latlng) => {
-      const object = {
+    (symbol: SymbolId, latlng: LatLng): MapObject => {
+      const object: MapObject = {
         id: newDraftId(),
         name: nextName(symbolLabel(symbol), [...objects, ...draftObjects]),
         symbol,
@@ -139,7 +163,7 @@ export function useMapData() {
     [objects, draftObjects],
   );
 
-  const moveDraftObject = useCallback((id, latlng) => {
+  const moveDraftObject = useCallback((id: string, latlng: LatLng) => {
     setDraftObjects((drafts) => drafts.map((o) => (o.id === id ? { ...o, latlng } : o)));
   }, []);
 
@@ -154,7 +178,7 @@ export function useMapData() {
   }, [draftObjects, run]);
 
   const deleteObject = useCallback(
-    async (id) => {
+    async (id: string): Promise<boolean> => {
       if (isDraftId(id)) {
         setDraftObjects((drafts) => drafts.filter((o) => o.id !== id));
         return true;

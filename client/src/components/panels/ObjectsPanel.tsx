@@ -1,6 +1,20 @@
 import Panel from './Panel';
 import SymbolPreview from '../SymbolPreview';
-import { MODES, SYMBOLS } from '../../map/constants';
+import { MODES, SYMBOLS, type Mode } from '../../map/constants';
+import type { MapObject, SymbolId } from '../../types';
+
+interface ObjectsPanelProps {
+  mode: Mode;
+  symbol: SymbolId;
+  savedCount: number;
+  draftCount: number;
+  selectedObject: MapObject | null;
+  busy: boolean;
+  onSymbolChange: (symbol: SymbolId) => void;
+  onToggleAdd: () => void;
+  onSave: () => void;
+  onDelete: () => void;
+}
 
 /**
  * Object management: choose a symbol (Marker / Jeep), Add (placement mode),
@@ -17,15 +31,15 @@ export default function ObjectsPanel({
   onToggleAdd,
   onSave,
   onDelete,
-}) {
+}: ObjectsPanelProps) {
   const adding = mode === MODES.ADD_OBJECT;
 
+  let hint = 'Click an object on the map to select it.';
+  if (adding) hint = 'Click on the map to place objects.';
+  else if (selectedObject) hint = `Selected: ${selectedObject.name}${selectedObject.saved ? '' : ' (unsaved)'}`;
+
   return (
-    <Panel
-      number={3}
-      title="Objects"
-      meta={`${savedCount} saved${draftCount ? ` · ${draftCount} unsaved` : ''}`}
-    >
+    <Panel number={3} title="Objects" meta={`${savedCount} saved${draftCount ? ` · ${draftCount} unsaved` : ''}`}>
       <div className="symbol-picker" role="radiogroup" aria-label="Object symbol">
         {SYMBOLS.map((s) => (
           <button
@@ -53,13 +67,7 @@ export default function ObjectsPanel({
           Delete
         </button>
       </div>
-      <p className="panel__hint">
-        {adding
-          ? 'Click on the map to place objects.'
-          : selectedObject
-            ? `Selected: ${selectedObject.name}${selectedObject.saved ? '' : ' (unsaved)'}`
-            : 'Click an object on the map to select it.'}
-      </p>
+      <p className="panel__hint">{hint}</p>
     </Panel>
   );
 }

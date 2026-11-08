@@ -7,15 +7,18 @@
  *   DELETE /api/polygons/{id}   -> 204
  *   DELETE /api/polygons        -> 204 (deletes all)
  *
- *   GET    /api/objects         -> ObjectDto[]
- *   POST   /api/objects         body: ObjectDto[] (no ids) -> ObjectDto[] (updated collection)
+ *   GET    /api/objects         -> MapObjectDto[]
+ *   POST   /api/objects         body: MapObjectDto[] (no ids) -> MapObjectDto[] (updated collection)
  *   DELETE /api/objects/{id}    -> 204
  */
+import type { MapApi } from './types';
 
 const BASE_URL = import.meta.env.VITE_API_URL ?? '';
 
-async function request(path, { method = 'GET', body } = {}) {
-  let response;
+type HttpMethod = 'GET' | 'POST' | 'DELETE';
+
+async function request<T = void>(path: string, method: HttpMethod = 'GET', body?: unknown): Promise<T> {
+  let response: Response;
   try {
     response = await fetch(`${BASE_URL}${path}`, {
       method,
@@ -31,17 +34,19 @@ async function request(path, { method = 'GET', body } = {}) {
     throw new Error(`${method} ${path} failed (${response.status})${details ? `: ${details}` : ''}`);
   }
 
-  const isJson = response.headers.get('content-type')?.includes('application/json');
-  return response.status === 204 || !isJson ? null : response.json();
+  const isJson = response.headers.get('content-type')?.includes('json') ?? false;
+  return (response.status === 204 || !isJson ? undefined : await response.json()) as T;
 }
 
-export const httpApi = {
+const idPath = (base: string, id: string) => `${base}/${encodeURIComponent(id)}`;
+
+export const httpApi: MapApi = {
   getPolygons: () => request('/api/polygons'),
-  createPolygon: (polygon) => request('/api/polygons', { method: 'POST', body: polygon }),
-  deletePolygon: (id) => request(`/api/polygons/${encodeURIComponent(id)}`, { method: 'DELETE' }),
-  deleteAllPolygons: () => request('/api/polygons', { method: 'DELETE' }),
+  createPolygon: (polygon) => request('/api/polygons', 'POST', polygon),
+  deletePolygon: (id) => request(idPath('/api/polygons', id), 'DELETE'),
+  deleteAllPolygons: () => request('/api/polygons', 'DELETE'),
 
   getObjects: () => request('/api/objects'),
-  saveObjects: (objects) => request('/api/objects', { method: 'POST', body: objects }),
-  deleteObject: (id) => request(`/api/objects/${encodeURIComponent(id)}`, { method: 'DELETE' }),
+  saveObjects: (objects) => request('/api/objects', 'POST', objects),
+  deleteObject: (id) => request(idPath('/api/objects', id), 'DELETE'),
 };

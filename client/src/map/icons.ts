@@ -6,6 +6,7 @@ import L from 'leaflet';
 import markerIconUrl from 'leaflet/dist/images/marker-icon.png';
 import markerIconRetinaUrl from 'leaflet/dist/images/marker-icon-2x.png';
 import markerShadowUrl from 'leaflet/dist/images/marker-shadow.png';
+import type { SymbolId } from '../types';
 
 export { markerIconUrl };
 
@@ -22,13 +23,18 @@ export const JEEP_SVG = `
   <circle cx="48" cy="28" r="7" fill="#111827"/><circle cx="48" cy="28" r="3" fill="#9ca3af"/>
 </svg>`;
 
-const cache = new Map();
+export interface IconState {
+  selected?: boolean;
+  draft?: boolean;
+}
 
-function stateClasses(selected, draft) {
+const cache = new Map<string, L.Icon | L.DivIcon>();
+
+function stateClasses({ selected, draft }: IconState): string {
   return [selected && 'is-selected', draft && 'is-draft'].filter(Boolean).join(' ');
 }
 
-function createMarkerIcon(selected, draft) {
+function createMarkerIcon(state: IconState): L.Icon {
   return new L.Icon({
     iconUrl: markerIconUrl,
     iconRetinaUrl: markerIconRetinaUrl,
@@ -37,29 +43,27 @@ function createMarkerIcon(selected, draft) {
     iconAnchor: [12, 41],
     tooltipAnchor: [12, -28],
     shadowSize: [41, 41],
-    className: `object-icon object-icon--marker ${stateClasses(selected, draft)}`,
+    className: `object-icon object-icon--marker ${stateClasses(state)}`,
   });
 }
 
-function createJeepIcon(selected, draft) {
+function createJeepIcon(state: IconState): L.DivIcon {
   return L.divIcon({
     html: `<div class="jeep-badge">${JEEP_SVG}</div>`,
     iconSize: [46, 34],
     iconAnchor: [23, 17],
     tooltipAnchor: [23, 0],
-    className: `object-icon object-icon--jeep ${stateClasses(selected, draft)}`,
+    className: `object-icon object-icon--jeep ${stateClasses(state)}`,
   });
 }
 
-/**
- * Returns the Leaflet icon for an object.
- * @param {'marker' | 'jeep'} symbol
- * @param {{ selected?: boolean, draft?: boolean }} state
- */
-export function getObjectIcon(symbol, { selected = false, draft = false } = {}) {
-  const key = `${symbol}|${selected}|${draft}`;
-  if (!cache.has(key)) {
-    cache.set(key, symbol === 'jeep' ? createJeepIcon(selected, draft) : createMarkerIcon(selected, draft));
+/** Returns the (cached) Leaflet icon for an object symbol in the given state. */
+export function getObjectIcon(symbol: SymbolId, state: IconState = {}): L.Icon | L.DivIcon {
+  const key = `${symbol}|${Boolean(state.selected)}|${Boolean(state.draft)}`;
+  let icon = cache.get(key);
+  if (!icon) {
+    icon = symbol === 'jeep' ? createJeepIcon(state) : createMarkerIcon(state);
+    cache.set(key, icon);
   }
-  return cache.get(key);
+  return icon;
 }

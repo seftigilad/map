@@ -1,7 +1,8 @@
 import { JEEP_SVG, markerIconUrl } from '../map/icons';
+import type { SymbolId } from '../types';
 
 /** Small inline preview of an object symbol, used in the panels and the data table. */
-export default function SymbolPreview({ symbol }) {
+export default function SymbolPreview({ symbol }: { symbol: SymbolId }) {
   if (symbol === 'jeep') {
     return <span className="symbol-preview symbol-preview--jeep" dangerouslySetInnerHTML={{ __html: JEEP_SVG }} />;
   }

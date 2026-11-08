@@ -4,8 +4,8 @@ Manage geographic objects (polygons and markers/symbols) on an interactive map.
 
 | Part     | Tech                         | Folder    |
 |----------|------------------------------|-----------|
-| Client   | React 18 + Leaflet (Vite)    | `client/` |
-| Server   | ASP.NET Core REST API        | `server/` (not yet created) |
+| Client   | React 18 + TypeScript + Leaflet (Vite) | `client/` |
+| Server   | ASP.NET Core REST API        | `server/` |
 | Database | MongoDB (GeoJSON documents)  | –         |
 
 ## Running the client
@@ -15,6 +15,8 @@ cd client
 npm install
 npm run dev        # http://localhost:5173 – /api is proxied to http://localhost:5000
 npm run dev:mock   # same UI, backed by an in-browser mock API (no server needed)
+npm run typecheck  # TypeScript check (strict mode)
+npm run build      # type-check + production build
 ```
 
 To use a server on another address, set `API_TARGET` (dev proxy) or `VITE_API_URL` (see `client/.env.example`).
@@ -46,19 +48,22 @@ Unsaved items are drawn dashed/translucent; the selected item is highlighted in 
 ```
 client/src/
 ├── api/
-│   ├── httpApi.js        REST calls to the server
-│   ├── mockApi.js        localStorage implementation of the same contract
-│   ├── mappers.js        DTO (GeoJSON) <-> view model conversion
-│   └── index.js          picks the http or mock implementation
+│   ├── types.ts          MapApi interface (the REST contract)
+│   ├── httpApi.ts        REST calls to the server
+│   ├── mockApi.ts        localStorage implementation of the same contract
+│   ├── mappers.ts        DTO (GeoJSON) <-> view model conversion
+│   └── index.ts          picks the http or mock implementation
 ├── components/
 │   ├── map/              MapView, PolygonDrawer, PolygonsLayer, ObjectsLayer
 │   ├── panels/           Panel, PolygonPanel, ObjectsPanel, MapDataPanel
-│   ├── SymbolPreview.jsx
-│   └── StatusToast.jsx
-├── hooks/useMapData.js   data state: saved items, drafts, save/delete operations
+│   ├── SymbolPreview.tsx
+│   └── StatusToast.tsx
+├── hooks/useMapData.ts   data state: saved items, drafts, save/delete operations
 ├── map/                  constants (modes, styles) and Leaflet icons (marker, jeep)
-├── utils/geo.js          GeoJSON helpers ([lat,lng] <-> [lng,lat])
-├── App.jsx               layout + UI state (mode, selection)
+├── utils/geo.ts          GeoJSON helpers ([lat,lng] <-> [lng,lat])
+├── types.ts              shared types: DTOs (match the server records) and view models
+├── vite-env.d.ts         typed VITE_* environment variables
+├── App.tsx               layout + UI state (mode, selection)
 └── styles.css
 ```
 

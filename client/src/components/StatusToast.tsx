@@ -2,8 +2,16 @@ import { useEffect } from 'react';
 
 const NOTICE_TIMEOUT_MS = 2500;
 
+interface StatusToastProps {
+  busy: boolean;
+  error: string | null;
+  notice: string | null;
+  onDismissError: () => void;
+  onDismissNotice: () => void;
+}
+
 /** Shows loading state, success notices (auto-dismissed) and errors (dismissed manually). */
-export default function StatusToast({ busy, error, notice, onDismissError, onDismissNotice }) {
+export default function StatusToast({ busy, error, notice, onDismissError, onDismissNotice }: StatusToastProps) {
   useEffect(() => {
     if (!notice) return undefined;
     const timer = setTimeout(onDismissNotice, NOTICE_TIMEOUT_MS);

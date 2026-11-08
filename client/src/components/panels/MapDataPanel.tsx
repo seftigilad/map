@@ -2,30 +2,45 @@ import { useMemo } from 'react';
 import Panel from './Panel';
 import SymbolPreview from '../SymbolPreview';
 import { formatCoord, polygonCenter } from '../../utils/geo';
+import type { ItemKind, MapObject, MapPolygon, Selection, SymbolId } from '../../types';
+
+interface Row {
+  kind: ItemKind;
+  id: string;
+  name: string;
+  symbol?: SymbolId;
+  detail?: string;
+  lat: number;
+  lon: number;
+}
 
 /** Builds table rows from saved polygons (center point) and saved objects. */
-function buildRows(polygons, objects) {
+function buildRows(polygons: MapPolygon[], objects: MapObject[]): Row[] {
   return [
-    ...polygons.map((p) => {
+    ...polygons.map((p): Row => {
       const [lat, lon] = polygonCenter(p.latlngs);
       return { kind: 'polygon', id: p.id, name: p.name, detail: `${p.latlngs.length} vertices · center`, lat, lon };
     }),
-    ...objects.map((o) => ({
-      kind: 'object',
-      id: o.id,
-      name: o.name,
-      symbol: o.symbol,
-      lat: o.latlng[0],
-      lon: o.latlng[1],
-    })),
+    ...objects.map(
+      (o): Row => ({ kind: 'object', id: o.id, name: o.name, symbol: o.symbol, lat: o.latlng[0], lon: o.latlng[1] }),
+    ),
   ];
+}
+
+interface MapDataPanelProps {
+  polygons: MapPolygon[];
+  objects: MapObject[];
+  selection: Selection | null;
+  busy: boolean;
+  onRowClick: (kind: ItemKind, id: string) => void;
+  onRefresh: () => void;
 }
 
 /**
  * Table of persisted map data (Object / Lat / Lon). Updated from the server after every Save.
  * Clicking a row selects the item and pans the map to it.
  */
-export default function MapDataPanel({ polygons, objects, selection, busy, onRowClick, onRefresh }) {
+export default function MapDataPanel({ polygons, objects, selection, busy, onRowClick, onRefresh }: MapDataPanelProps) {
   const rows = useMemo(() => buildRows(polygons, objects), [polygons, objects]);
 
   return (
@@ -68,10 +83,10 @@ export default function MapDataPanel({ polygons, objects, selection, busy, onRow
                   >
                     <td>
                       <div className="data-table__object">
-                        {row.kind === 'polygon' ? (
-                          <span className="polygon-swatch" aria-hidden="true" />
-                        ) : (
+                        {row.symbol ? (
                           <SymbolPreview symbol={row.symbol} />
+                        ) : (
+                          <span className="polygon-swatch" aria-hidden="true" />
                         )}
                         <div>
                           <div className="data-table__name">{row.name}</div>

@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { isMockApi } from './api';
 import { useMapData, isDraftId } from './hooks/useMapData';
-import { MODES, SYMBOLS } from './map/constants';
+import { MODES, SYMBOLS, type Mode } from './map/constants';
+import type { FocusTarget, ItemKind, LatLng, Selection, SymbolId } from './types';
 import MapView from './components/map/MapView';
 import Panel from './components/panels/Panel';
 import PolygonPanel from './components/panels/PolygonPanel';
@@ -17,34 +18,37 @@ import StatusToast from './components/StatusToast';
  */
 export default function App() {
   const data = useMapData();
-  const [mode, setMode] = useState(MODES.IDLE);
-  const [symbol, setSymbol] = useState(SYMBOLS[0].id);
-  /** @type {[{ kind: 'polygon' | 'object', id: string } | null, Function]} */
-  const [selection, setSelection] = useState(null);
-  const [focusTarget, setFocusTarget] = useState(null);
+  const [mode, setMode] = useState<Mode>(MODES.IDLE);
+  const [symbol, setSymbol] = useState<SymbolId>(SYMBOLS[0]?.id ?? 'marker');
+  const [selection, setSelection] = useState<Selection | null>(null);
+  const [focusTarget, setFocusTarget] = useState<FocusTarget | null>(null);
 
   const allPolygons = useMemo(() => [...data.polygons, ...data.draftPolygons], [data.polygons, data.draftPolygons]);
   const allObjects = useMemo(() => [...data.objects, ...data.draftObjects], [data.objects, data.draftObjects]);
 
-  const selectedPolygon = selection?.kind === 'polygon' ? allPolygons.find((p) => p.id === selection.id) : null;
-  const selectedObject = selection?.kind === 'object' ? allObjects.find((o) => o.id === selection.id) : null;
+  const selectedPolygon =
+    selection?.kind === 'polygon' ? (allPolygons.find((p) => p.id === selection.id) ?? null) : null;
+  const selectedObject =
+    selection?.kind === 'object' ? (allObjects.find((o) => o.id === selection.id) ?? null) : null;
 
   // Esc leaves any drawing / placement mode.
   useEffect(() => {
-    const onKeyDown = (e) => e.key === 'Escape' && setMode(MODES.IDLE);
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setMode(MODES.IDLE);
+    };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
   }, []);
 
-  const toggleMode = (target) => setMode((current) => (current === target ? MODES.IDLE : target));
+  const toggleMode = (target: Mode) => setMode((current) => (current === target ? MODES.IDLE : target));
 
   /** Clears the selection if it points at a draft of the given kind (drafts get new ids once saved). */
-  const dropDraftSelection = (kind) =>
+  const dropDraftSelection = (kind: ItemKind) =>
     setSelection((s) => (s?.kind === kind && isDraftId(s.id) ? null : s));
 
   // ---------- Map events ----------
 
-  const handleMapClick = (latlng) => {
+  const handleMapClick = (latlng: LatLng) => {
     if (mode === MODES.ADD_OBJECT) {
       const object = data.addDraftObject(symbol, latlng);
       setSelection({ kind: 'object', id: object.id });
@@ -53,7 +57,7 @@ export default function App() {
     }
   };
 
-  const handlePolygonComplete = (latlngs) => {
+  const handlePolygonComplete = (latlngs: LatLng[]) => {
     const polygon = data.addDraftPolygon(latlngs);
     setMode(MODES.IDLE);
     setSelection({ kind: 'polygon', id: polygon.id });
@@ -86,23 +90,22 @@ export default function App() {
 
   // ---------- Table ----------
 
-  const handleRowClick = (kind, id) => {
+  const handleRowClick = (kind: ItemKind, id: string) => {
     setSelection({ kind, id });
-    const item = kind === 'polygon' ? allPolygons.find((p) => p.id === id) : allObjects.find((o) => o.id === id);
-    if (!item) return;
     // A fresh object each time so clicking the same row twice still re-centers the map.
-    setFocusTarget(kind === 'polygon' ? { latlngs: item.latlngs } : { latlng: item.latlng });
+    if (kind === 'polygon') {
+      const polygon = allPolygons.find((p) => p.id === id);
+      if (polygon) setFocusTarget({ latlngs: polygon.latlngs });
+    } else {
+      const object = allObjects.find((o) => o.id === id);
+      if (object) setFocusTarget({ latlng: object.latlng });
+    }
   };
 
   return (
     <div className="app">
       <main className="app__map">
-        <Panel
-          number={1}
-          title="Map"
-          className="panel--map"
-          meta={isMockApi ? 'Mock API (local storage)' : undefined}
-        >
+        <Panel number={1} title="Map" className="panel--map" meta={isMockApi ? 'Mock API (local storage)' : undefined}>
           <MapView
             mode={mode}
             polygons={allPolygons}
@@ -154,7 +157,7 @@ export default function App() {
           selection={selection}
           busy={data.busy}
           onRowClick={handleRowClick}
-          onRefresh={data.reload}
+          onRefresh={() => void data.reload()}
         />
       </aside>
     </div>

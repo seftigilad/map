@@ -1,3 +1,4 @@
+using System.Text.RegularExpressions;
 using MapServer.Services;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
@@ -11,8 +12,14 @@ namespace MapServer.Infrastructure;
 /// </summary>
 public sealed class ApiExceptionHandler : IExceptionHandler
 {
-    /// <summary>MongoDB error code for geometry a 2dsphere index cannot accept (e.g. self-intersecting edges).</summary>
-    private const int CannotExtractGeoKeys = 16755;
+    /// <summary>
+    /// MongoDB error codes for geometry a 2dsphere index cannot accept (e.g. self-intersecting edges):
+    /// 16755 on older servers, 510 (CannotBuildIndexKeys) on current ones.
+    /// </summary>
+    private static readonly HashSet<int> InvalidGeometryCodes = [16755, 510];
+
+    /// <summary>Picks the crossing edges out of MongoDB's "Edges 0 and 2 cross" message.</summary>
+    private static readonly Regex CrossingEdges = new(@"Edges (\d+) and (\d+) cross", RegexOptions.Compiled);
 
     private readonly IProblemDetailsService _problemDetails;
     private readonly ILogger<ApiExceptionHandler> _logger;
@@ -32,11 +39,12 @@ public sealed class ApiExceptionHandler : IExceptionHandler
             RequestValidationException e =>
                 (StatusCodes.Status400BadRequest, "Invalid request", e.Message),
 
-            MongoWriteException { WriteError.Code: CannotExtractGeoKeys } e =>
-                (StatusCodes.Status400BadRequest, "Invalid geometry", $"MongoDB rejected the geometry: {e.WriteError.Message}"),
+            MongoWriteException e when InvalidGeometryCodes.Contains(e.WriteError.Code) =>
+                (StatusCodes.Status400BadRequest, "Invalid geometry", DescribeInvalidGeometry(e.WriteError.Message)),
 
-            MongoBulkWriteException e when e.WriteErrors.Any(w => w.Code == CannotExtractGeoKeys) =>
-                (StatusCodes.Status400BadRequest, "Invalid geometry", $"MongoDB rejected the geometry: {e.WriteErrors[0].Message}"),
+            MongoBulkWriteException e when e.WriteErrors.Any(w => InvalidGeometryCodes.Contains(w.Code)) =>
+                (StatusCodes.Status400BadRequest, "Invalid geometry",
+                    DescribeInvalidGeometry(e.WriteErrors.First(w => InvalidGeometryCodes.Contains(w.Code)).Message)),
 
             TimeoutException or MongoConnectionException =>
                 (StatusCodes.Status503ServiceUnavailable, "Database unavailable", "Cannot reach MongoDB. Is it running?"),
@@ -57,5 +65,22 @@ public sealed class ApiExceptionHandler : IExceptionHandler
             Exception = exception,
             ProblemDetails = new ProblemDetails { Status = status, Title = title, Detail = detail },
         });
+    }
+
+    /// <summary>
+    /// Turns MongoDB's long geo-index error into a short message a user can act on.
+    /// </summary>
+    private static string DescribeInvalidGeometry(string mongoMessage)
+    {
+        var match = CrossingEdges.Match(mongoMessage);
+        if (match.Success)
+        {
+            // MongoDB numbers edges from 0; people count from 1.
+            var first = int.Parse(match.Groups[1].Value) + 1;
+            var second = int.Parse(match.Groups[2].Value) + 1;
+            return $"The polygon's edges cross each other (edges {first} and {second}). Draw it without overlapping lines.";
+        }
+
+        return "MongoDB could not index this geometry. Make sure the polygon's edges don't cross each other.";
     }
 }
